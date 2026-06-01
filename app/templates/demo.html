@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo — TCS Identity Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background: #0f172a; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .flow-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 32px; transition: all .2s; cursor: pointer; text-decoration: none; color: inherit; display: block; }
+        .flow-card:hover { border-color: #2563eb; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(37,99,235,0.2); color: inherit; }
+        .flow-card .icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-bottom: 16px; }
+        .step-badge { background: #2563eb; color: #fff; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+        .step-line { border-left: 2px dashed #334155; margin-left: 11px; padding-left: 20px; padding-bottom: 12px; }
+        .cred-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; font-family: monospace; font-size: 0.8rem; color: #94a3b8; }
+        .cred-box strong { color: #f1f5f9; }
+        .tag { background: #1e40af22; border: 1px solid #1e40af; color: #93c5fd; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    </style>
+</head>
+<body>
+<div class="container py-5">
+
+    <!-- Header -->
+    <div class="text-center mb-5">
+        <div class="mb-2"><span class="tag">POC Demo</span></div>
+        <h1 class="fw-bold" style="font-size: 2.2rem; letter-spacing: -0.5px;">
+            <i class="bi bi-lightning-charge-fill text-primary me-2"></i>TCS Identity Platform
+        </h1>
+        <p class="text-secondary mt-2" style="font-size: 1.1rem;">
+            Auth0 / Okta CIC — Identity Provider POC
+        </p>
+        <p class="text-secondary small">Auth0 Tenant: <code style="color:#94a3b8">dev-yeikeanv4of108fo.us.auth0.com</code></p>
+    </div>
+
+    <!-- Flow cards -->
+    <div class="row g-4 mb-5">
+
+        <!-- Architecture Overview — full width -->
+        <div class="col-12 mb-2">
+            <a href="/architecture" style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:24px 28px;display:block;text-decoration:none;color:inherit;transition:all .2s;" onmouseover="this.style.borderColor='#2563eb';this.style.boxShadow='0 8px 32px rgba(37,99,235,0.2)'" onmouseout="this.style.borderColor='#334155';this.style.boxShadow='none'">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-1"><i class="bi bi-diagram-3 me-2 text-primary"></i>Architecture Overview</h5>
+                        <p class="text-secondary small mb-0">See how Auth0 (IdP) and Platform Backend divide all responsibilities — Authentication · MFA · Invitations · Roles · Entitlements · Document Access</p>
+                    </div>
+                    <span class="btn btn-outline-primary btn-sm px-4">View Architecture →</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Option A -->
+        <div class="col-md-4">
+            <a href="/tcs/login" class="flow-card h-100">
+                <div class="icon" style="background:#1e40af22;">
+                    <i class="bi bi-building text-primary"></i>
+                </div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <h5 class="fw-bold mb-0">Option A — TCS Managed</h5>
+                    <span class="tag">Centralised</span>
+                </div>
+                <p class="text-secondary small mb-4">TCS admin manages all organisations. Invites users, assigns roles, runs bulk migration across every org from one place.</p>
+                <div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge">1</span>
+                        <div class="step-line text-secondary small">TCS opens migration dashboard — sees all orgs</div>
+                    </div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge">2</span>
+                        <div class="step-line text-secondary small">Invites user to any org — email sent via Auth0</div>
+                    </div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge">3</span>
+                        <div class="step-line text-secondary small">User accepts → sets password → pending role queue</div>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <span class="step-badge">4</span>
+                        <div class="text-secondary small">TCS assigns role → user is active</div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <span class="btn btn-primary btn-sm px-4">
+                        <i class="bi bi-arrow-right me-1"></i>TCS Admin Login
+                    </span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Option B -->
+        <div class="col-md-4">
+            <a href="/org/login" class="flow-card h-100">
+                <div class="icon" style="background:#14532d22;">
+                    <i class="bi bi-people text-success"></i>
+                </div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <h5 class="fw-bold mb-0">Option B — Org Self-Service</h5>
+                    <span class="tag" style="border-color:#16a34a;color:#4ade80;background:#14532d22;">Delegated</span>
+                </div>
+                <p class="text-secondary small mb-4">Each organisation admin manages their own team. Invites users, assigns roles — scoped to their org only. TCS never involved.</p>
+                <div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge" style="background:#16a34a;">1</span>
+                        <div class="step-line text-secondary small">Org Admin logs in — sees only their org</div>
+                    </div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge" style="background:#16a34a;">2</span>
+                        <div class="step-line text-secondary small">Invites user to their org — email sent via Auth0</div>
+                    </div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge" style="background:#16a34a;">3</span>
+                        <div class="step-line text-secondary small">User accepts → sets password → pending role queue</div>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <span class="step-badge" style="background:#16a34a;">4</span>
+                        <div class="text-secondary small">Org Admin assigns role → user is active</div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <span class="btn btn-success btn-sm px-4">
+                        <i class="bi bi-arrow-right me-1"></i>Open Org Admin Login
+                    </span>
+                </div>
+            </a>
+        </div>
+        <!-- Option C — Social Login -->
+        <div class="col-md-4">
+            <a href="/social-login" class="flow-card h-100">
+                <div class="icon" style="background:#4c1d9522;">
+                    <i class="bi bi-shield-lock text-purple" style="color:#a78bfa;"></i>
+                </div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <h5 class="fw-bold mb-0">OAuth 2.0 / OIDC</h5>
+                    <span class="tag" style="border-color:#7c3aed;color:#a78bfa;background:#4c1d9522;">Social</span>
+                </div>
+                <p class="text-secondary small mb-4">Users sign in with Google, Microsoft, or GitHub. Auth0 normalises identity — platform DB resolves role from the <code style="color:#94a3b8;">sub</code> claim regardless of provider.</p>
+                <div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge" style="background:#7c3aed;">1</span>
+                        <div class="step-line text-secondary small">User clicks Google / Microsoft / GitHub</div>
+                    </div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge" style="background:#7c3aed;">2</span>
+                        <div class="step-line text-secondary small">PKCE auth code flow → Auth0 callback</div>
+                    </div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge" style="background:#7c3aed;">3</span>
+                        <div class="step-line text-secondary small">Thin JWT: <code style="color:#94a3b8;">sub · email</code> only</div>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <span class="step-badge" style="background:#7c3aed;">4</span>
+                        <div class="text-secondary small">Platform DB resolves role &amp; entitlements</div>
+                    </div>
+                </div>
+                <div class="mt-4 d-flex gap-2">
+                    <span class="btn btn-sm px-3" style="background:#7c3aed;color:#fff;">
+                        <i class="bi bi-arrow-right me-1"></i>Try Social Login
+                    </span>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Demo credentials -->
+    <div style="background:#1e293b; border:1px solid #334155; border-radius:16px; padding:28px;" class="mb-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-key me-2 text-warning"></i>Demo Credentials</h6>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="cred-box">
+                    <div class="mb-1"><span class="badge bg-primary me-1">TCS Admin</span> <span class="badge bg-secondary">Acme Corp</span></div>
+                    <div><strong>Email:</strong> utsav.patel@ignitedata.ai</div>
+                    <div><strong>Pass:</strong> Utsav@123</div>
+                    <div><strong>Role:</strong> admin</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="cred-box">
+                    <div class="mb-1"><span class="badge bg-success me-1">Org Admin</span> <span class="badge bg-secondary">Acme Corp</span></div>
+                    <div><strong>Email:</strong> utsavpatel8696@gmail.com</div>
+                    <div><strong>Pass:</strong> Utsav@123</div>
+                    <div><strong>Role:</strong> member → admin</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="cred-box">
+                    <div class="mb-1"><span class="badge bg-warning text-dark me-1">Org Admins</span> <span class="badge bg-secondary">Globex Inc</span></div>
+                    <div><strong>Email:</strong> bob@globex.com</div>
+                    <div><strong>Pass:</strong> Utsav@123</div>
+                    <div><strong>Role:</strong> admin</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session 5: Subscription + Permissions -->
+    <div style="background:#1e293b; border:1px solid #334155; border-radius:16px; padding:28px;" class="mb-4">
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <div style="background:#4c1d9522;border-radius:12px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="bi bi-credit-card-2-front" style="color:#a78bfa;font-size:1.3rem;"></i>
+            </div>
+            <div>
+                <h6 class="fw-bold mb-0" style="color:#f1f5f9;">Session 5 — Subscription + Permissions</h6>
+                <span style="font-size:0.75rem;color:#94a3b8;">Tier management, permission profiles, and MFA/2FA policies</span>
+            </div>
+            <span class="tag ms-auto" style="border-color:#7c3aed;color:#a78bfa;background:#4c1d9522;">New</span>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <a href="/subscription/dashboard" style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;display:block;text-decoration:none;transition:border-color .2s;" onmouseover="this.style.borderColor='#7c3aed'" onmouseout="this.style.borderColor='#334155'">
+                    <div style="color:#a78bfa;" class="mb-2"><i class="bi bi-bar-chart-steps me-2"></i><strong>Tier Management</strong></div>
+                    <div style="color:#94a3b8;font-size:0.8rem;">Free / Professional / Enterprise tiers. Toggle add-ons (Analytics, API, SSO) per org. TCS admin view.</div>
+                    <div class="mt-2"><span style="background:#7c3aed;color:#fff;font-size:0.72rem;padding:2px 10px;border-radius:20px;">/subscription/dashboard</span></div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="/permissions/org_acmecorp" style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;display:block;text-decoration:none;transition:border-color .2s;" onmouseover="this.style.borderColor='#16a34a'" onmouseout="this.style.borderColor='#334155'">
+                    <div style="color:#4ade80;" class="mb-2"><i class="bi bi-shield-lock me-2"></i><strong>Permission Profiles</strong></div>
+                    <div style="color:#94a3b8;font-size:0.8rem;">viewer / member / analyst / admin profiles. Grant + exclusion model. Per-user overrides. Effective permissions.</div>
+                    <div class="mt-2"><span style="background:#16a34a;color:#fff;font-size:0.72rem;padding:2px 10px;border-radius:20px;">/permissions/org_acmecorp</span></div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="/mfa/setup" style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;display:block;text-decoration:none;transition:border-color .2s;" onmouseover="this.style.borderColor='#f59e0b'" onmouseout="this.style.borderColor='#334155'">
+                    <div style="color:#fbbf24;" class="mb-2"><i class="bi bi-shield-check me-2"></i><strong>MFA / 2FA Setup</strong></div>
+                    <div style="color:#94a3b8;font-size:0.8rem;">TOTP (Authenticator), SMS OTP, Email OTP. Org-level required/optional policy. Auth0 enrollment flow.</div>
+                    <div class="mt-2"><span style="background:#b45309;color:#fff;font-size:0.72rem;padding:2px 10px;border-radius:20px;">/mfa/setup</span></div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="/documents" style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;display:block;text-decoration:none;transition:border-color .2s;" onmouseover="this.style.borderColor='#16a34a'" onmouseout="this.style.borderColor='#334155'">
+                    <div style="color:#4ade80;" class="mb-2"><i class="bi bi-file-earmark-lock me-2"></i><strong>Document Access</strong></div>
+                    <div style="color:#94a3b8;font-size:0.8rem;">Resource-level access control. JWT sub → DB entitlements → document visibility. Tier + role gating demo.</div>
+                    <div class="mt-2"><span style="background:#15803d;color:#fff;font-size:0.72rem;padding:2px 10px;border-radius:20px;">/documents</span></div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="/account-recovery" style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;display:block;text-decoration:none;transition:border-color .2s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='#334155'">
+                    <div style="color:#93c5fd;" class="mb-2"><i class="bi bi-arrow-repeat me-2"></i><strong>Account Recovery</strong></div>
+                    <div style="color:#94a3b8;font-size:0.8rem;">Forgot password, resend verification, unlock blocked accounts. All delegated to Auth0 Management API.</div>
+                    <div class="mt-2"><span style="background:#1d4ed8;color:#fff;font-size:0.72rem;padding:2px 10px;border-radius:20px;">/account-recovery</span></div>
+                </a>
+            </div>
+        </div>
+        <div class="mt-3 p-2 rounded" style="background:#0f172a;border:1px solid #334155;font-size:0.75rem;color:#94a3b8;">
+            <i class="bi bi-key-fill me-2 text-warning"></i>
+            Login required for subscription/permissions: <code style="color:#e2e8f0;">utsav.patel@ignitedata.ai</code> / <code style="color:#e2e8f0;">Utsav@123</code> via <a href="/tcs/login" style="color:#93c5fd;">TCS Login</a>.
+            For org permissions use any admin via <a href="/org/login" style="color:#93c5fd;">Org Login</a>.
+        </div>
+    </div>
+
+    <!-- Architecture note -->
+    <div style="background:#1e293b; border:1px solid #334155; border-radius:16px; padding:24px;">
+        <h6 class="fw-bold mb-3"><i class="bi bi-shield-check me-2 text-primary"></i>Architecture Principle</h6>
+        <div class="row g-3 text-secondary small">
+            <div class="col-md-6">
+                <strong class="text-light">Auth0 JWT carries (thin):</strong>
+                <div class="cred-box mt-2">sub · email · email_verified · exp</div>
+            </div>
+            <div class="col-md-6">
+                <strong class="text-light">Platform DB resolves:</strong>
+                <div class="cred-box mt-2">tenant_id · role · entitlements · subscription</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

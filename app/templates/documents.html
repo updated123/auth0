@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block title %}Document Access Control — TCS Identity Platform{% endblock %}
+
+{% block head %}
+<style>
+    .section-header {
+        background: linear-gradient(135deg, #14532d 0%, #15803d 100%);
+        color: #fff;
+        border-radius: 12px;
+        padding: 22px 28px;
+        margin-bottom: 28px;
+    }
+    .tier-badge-free { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+    .tier-badge-pro  { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+    .tier-badge-ent  { background: #f3e8ff; color: #7c3aed; border: 1px solid #c4b5fd; }
+    .access-yes { color: #16a34a; font-weight: 700; font-size: 1rem; }
+    .access-no  { color: #dc2626; font-size: 1rem; }
+    .access-addon { color: #b45309; font-weight: 600; font-size: 0.8rem; }
+    .entitlement-pill {
+        background: #0f172a;
+        color: #94a3b8;
+        font-family: monospace;
+        font-size: 0.72rem;
+        padding: 2px 8px;
+        border-radius: 4px;
+        border: 1px solid #334155;
+    }
+    .code-block {
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 18px 20px;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        overflow-x: auto;
+        font-family: 'Fira Mono', 'Cascadia Code', monospace;
+    }
+    .code-block .kw  { color: #7dd3fc; }
+    .code-block .fn  { color: #fde68a; }
+    .code-block .str { color: #86efac; }
+    .code-block .cmt { color: #64748b; }
+    .doc-row-hidden { display: none !important; }
+    .how-step { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 18px; }
+    .step-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+</style>
+{% endblock %}
+
+{% block content_no_sidebar %}
+
+<div class="section-header d-flex justify-content-between align-items-start">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-file-earmark-lock-fill me-2"></i>Document Access Control Demo</h4>
+        <p class="mb-0 opacity-75 small">Platform DB resolves access from JWT <code style="color:#bbf7d0;">sub</code> — Auth0 never knows about documents</p>
+    </div>
+    <a href="/demo" class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);">
+        <i class="bi bi-arrow-left me-1"></i>Back to Demo
+    </a>
+</div>
+
+<!-- How it works -->
+<div class="card mb-4">
+    <div class="card-header bg-white fw-semibold"><i class="bi bi-diagram-3 me-2 text-success"></i>How Resource Access Works</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="how-step h-100">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="step-num" style="background:#dbeafe;color:#1d4ed8;">1</div>
+                        <strong class="small">User logs in via Auth0</strong>
+                    </div>
+                    <p class="text-muted small mb-0">Auth0 issues a thin JWT containing only <code>sub</code>, <code>email</code>, and <code>email_verified</code>. No document permissions in the token.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="how-step h-100">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="step-num" style="background:#dcfce7;color:#15803d;">2</div>
+                        <strong class="small">Platform DB maps sub → entitlements</strong>
+                    </div>
+                    <p class="text-muted small mb-0">The backend validates the JWT, extracts <code>sub</code>, and looks up the user's <code>org_id</code>, <code>role</code>, and <code>entitlements[]</code> from the platform database.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="how-step h-100">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="step-num" style="background:#f3e8ff;color:#7c3aed;">3</div>
+                        <strong class="small">Entitlements gate document visibility</strong>
+                    </div>
+                    <p class="text-muted small mb-0">Each document has a required entitlement. The backend checks <code>required_entitlement in user_entitlements</code> before returning the resource. Auth0 is never consulted.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tier + Role selector -->
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <div class="row align-items-center g-3">
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold mb-2"><i class="bi bi-bar-chart-steps me-1 text-primary"></i>Simulate Subscription Tier</label>
+                <div class="d-flex gap-2 flex-wrap">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="tier" id="tier-free" value="free" checked onchange="filterDocs()">
+                        <label class="form-check-label" for="tier-free">
+                            <span class="badge tier-badge-free">Free</span>
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="tier" id="tier-pro" value="pro" onchange="filterDocs()">
+                        <label class="form-check-label" for="tier-pro">
+                            <span class="badge tier-badge-pro">Professional</span>
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="tier" id="tier-ent" value="enterprise" onchange="filterDocs()">
+                        <label class="form-check-label" for="tier-ent">
+                            <span class="badge tier-badge-ent">Enterprise</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold mb-2"><i class="bi bi-person-badge me-1 text-success"></i>View as Role</label>
+                <select class="form-select form-select-sm" id="role-select" onchange="filterDocs()" style="max-width:200px;">
+                    <option value="viewer">viewer</option>
+                    <option value="member" selected>member</option>
+                    <option value="analyst">analyst</option>
+                    <option value="admin">admin</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document library table -->
+<div class="card mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-folder2-open me-2 text-success"></i>Document Library</span>
+        <span class="text-muted small" id="visible-count"></span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Document</th>
+                    <th>Required Entitlement</th>
+                    <th class="text-center">Free</th>
+                    <th class="text-center">Professional</th>
+                    <th class="text-center">Enterprise</th>
+                    <th class="text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody id="doc-table-body">
+                <!-- rows: data-tiers = tiers that have access, data-roles = roles that can access -->
+                <tr data-tiers="free,pro,enterprise" data-roles="viewer,member,analyst,admin">
+                    <td class="ps-3 fw-semibold small">Monthly Report Q1</td>
+                    <td><span class="entitlement-pill">reports:read</span></td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center" id="status-0"></td>
+                </tr>
+                <tr data-tiers="free,pro,enterprise" data-roles="viewer,member,analyst,admin">
+                    <td class="ps-3 fw-semibold small">Annual Dashboard</td>
+                    <td><span class="entitlement-pill">dashboards:read</span></td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center" id="status-1"></td>
+                </tr>
+                <tr data-tiers="pro,enterprise" data-roles="member,analyst,admin">
+                    <td class="ps-3 fw-semibold small">Raw Data Export (CSV)</td>
+                    <td><span class="entitlement-pill">data:read</span></td>
+                    <td class="text-center access-no">✗</td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center" id="status-2"></td>
+                </tr>
+                <tr data-tiers="pro,enterprise" data-roles="analyst,admin">
+                    <td class="ps-3 fw-semibold small">Customer Data Export</td>
+                    <td><span class="entitlement-pill">data:export</span></td>
+                    <td class="text-center access-no">✗</td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center" id="status-3"></td>
+                </tr>
+                <tr data-tiers="pro,enterprise" data-roles="analyst,admin">
+                    <td class="ps-3 fw-semibold small">Analytics Report</td>
+                    <td><span class="entitlement-pill">analytics:read</span></td>
+                    <td class="text-center access-no">✗</td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center" id="status-4"></td>
+                </tr>
+                <tr data-tiers="enterprise" data-roles="analyst,admin" data-addon="true">
+                    <td class="ps-3 fw-semibold small">Bulk Export (10k rows)</td>
+                    <td><span class="entitlement-pill">data:export:bulk</span></td>
+                    <td class="text-center access-no">✗</td>
+                    <td class="text-center access-no">✗</td>
+                    <td class="text-center"><span class="access-addon">✓ (add-on)</span></td>
+                    <td class="text-center" id="status-5"></td>
+                </tr>
+                <tr data-tiers="enterprise" data-roles="member,analyst,admin">
+                    <td class="ps-3 fw-semibold small">API Reference Docs</td>
+                    <td><span class="entitlement-pill">api:access</span></td>
+                    <td class="text-center access-no">✗</td>
+                    <td class="text-center access-no">✗</td>
+                    <td class="text-center access-yes">✓</td>
+                    <td class="text-center" id="status-6"></td>
+                </tr>
+                <tr data-tiers="enterprise" data-roles="admin">
+                    <td class="ps-3 fw-semibold small">Admin Audit Log</td>
+                    <td><span class="entitlement-pill">* (admin only)</span></td>
+                    <td class="text-center access-no">✗</td>
+                    <td class="text-center access-no">✗</td>
+                    <td class="text-center"><span class="access-addon">✓ (admin)</span></td>
+                    <td class="text-center" id="status-7"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer bg-white">
+        <div class="text-muted small">
+            <i class="bi bi-info-circle me-1"></i>
+            Use the tier and role selectors above to simulate different user contexts. The <strong>Status</strong> column shows whether the current simulated user can access each document.
+        </div>
+    </div>
+</div>
+
+<!-- Backend logic code block -->
+<div class="card mb-4">
+    <div class="card-header bg-white fw-semibold"><i class="bi bi-code-slash me-2 text-primary"></i>Backend Access Check Logic</div>
+    <div class="card-body p-0">
+        <div class="code-block rounded-top-0">
+<span class="cmt"># Platform backend — resource-level access check</span>
+<span class="cmt"># Called on every document request after JWT validation</span>
+
+<span class="kw">def</span> <span class="fn">can_access</span>(user_entitlements: list[str], required_entitlement: str) -> bool:
+    <span class="str">"""
+    Check if user has the required entitlement.
+    Wildcard '*' grants access to everything (admin).
+    """</span>
+    <span class="kw">if</span> <span class="str">"*"</span> <span class="kw">in</span> user_entitlements:
+        <span class="kw">return</span> True
+    <span class="kw">return</span> required_entitlement <span class="kw">in</span> user_entitlements
+
+
+<span class="cmt"># Example: resolving user context from JWT sub</span>
+<span class="kw">async def</span> <span class="fn">get_document</span>(doc_id: str, jwt_sub: str, db: AsyncSession):
+    user = <span class="kw">await</span> db.get_user_by_sub(jwt_sub)          <span class="cmt"># Platform DB lookup</span>
+    doc  = <span class="kw">await</span> db.get_document(doc_id)
+
+    <span class="kw">if not</span> can_access(user.entitlements, doc.required_entitlement):
+        <span class="kw">raise</span> HTTPException(status_code=<span class="str">403</span>, detail=<span class="str">"Entitlement required"</span>)
+
+    <span class="kw">return</span> doc                                          <span class="cmt"># Auth0 was never consulted</span>
+        </div>
+    </div>
+</div>
+
+<!-- Architecture note -->
+<div class="alert alert-arch p-3">
+    <i class="bi bi-shield-lock me-2"></i>
+    <strong>Auth0 never knows about documents.</strong> It issues a thin JWT with only <code>sub</code> and <code>email</code>.
+    The platform backend maps <code>sub</code> → entitlements → document access at request time.
+    Changing a user's entitlements takes effect immediately — no token re-issue needed.
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Document data: index, tiers[], roles[], hasAccess at each tier
+const docs = [
+    { idx: 0, tiers: ['free','pro','enterprise'], roles: ['viewer','member','analyst','admin'] },
+    { idx: 1, tiers: ['free','pro','enterprise'], roles: ['viewer','member','analyst','admin'] },
+    { idx: 2, tiers: ['pro','enterprise'],        roles: ['member','analyst','admin'] },
+    { idx: 3, tiers: ['pro','enterprise'],        roles: ['analyst','admin'] },
+    { idx: 4, tiers: ['pro','enterprise'],        roles: ['analyst','admin'] },
+    { idx: 5, tiers: ['enterprise'],              roles: ['analyst','admin'] },
+    { idx: 6, tiers: ['enterprise'],              roles: ['member','analyst','admin'] },
+    { idx: 7, tiers: ['enterprise'],              roles: ['admin'] },
+];
+
+function filterDocs() {
+    const tier = document.querySelector('input[name="tier"]:checked').value;
+    const role = document.getElementById('role-select').value;
+    const rows = document.querySelectorAll('#doc-table-body tr');
+    let visible = 0;
+
+    docs.forEach((doc, i) => {
+        const row = rows[i];
+        const tierOk = doc.tiers.includes(tier);
+        const roleOk = doc.roles.includes(role);
+        const canAccess = tierOk && roleOk;
+
+        // Status column
+        const statusCell = document.getElementById('status-' + doc.idx);
+        if (canAccess) {
+            statusCell.innerHTML = '<span class="badge bg-success"><i class="bi bi-unlock me-1"></i>Accessible</span>';
+            row.style.opacity = '1';
+        } else {
+            statusCell.innerHTML = '<span class="badge bg-secondary text-white"><i class="bi bi-lock me-1"></i>No access</span>';
+            row.style.opacity = '0.45';
+        }
+        row.style.display = '';
+        visible++;
+    });
+
+    document.getElementById('visible-count').textContent =
+        visible + ' documents · ' +
+        docs.filter((d, i) => d.tiers.includes(tier) && d.roles.includes(role)).length + ' accessible';
+}
+
+// Run on load
+filterDocs();
+</script>
+{% endblock %}

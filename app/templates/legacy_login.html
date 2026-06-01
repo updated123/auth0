@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Login — TCS Identity Platform{% endblock %}
+
+{% block content_no_sidebar %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+
+        <!-- Legacy badge -->
+        <div class="text-center mb-4">
+            <a href="/demo" class="btn btn-outline-secondary btn-sm mb-3">
+                <i class="bi bi-arrow-left me-1"></i>Demo Home
+            </a>
+            <div>
+            <span class="badge bg-secondary px-3 py-2 mb-2">
+                <i class="bi bi-database me-1"></i>Legacy Login (Kinsta DB)
+            </span>
+            </div>
+            <h4 class="fw-bold">Sign in to TCS</h4>
+            {% if hint %}
+            <p class="text-primary small fw-semibold">{{ hint }}</p>
+            {% else %}
+            <p class="text-muted small">Enter your existing email and password.</p>
+            {% endif %}
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <div class="card p-4 shadow-sm">
+            <form method="POST" action="/legacy-login">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Email address</label>
+                    <input type="email" name="email" class="form-control" placeholder="you@example.com" required autofocus>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Password</label>
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                </button>
+            </form>
+            <div class="text-center mt-3">
+                <a href="/forgot-password" class="text-muted small">
+                    <i class="bi bi-key me-1"></i>Forgot password?
+                </a>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+{% endblock content_no_sidebar %}

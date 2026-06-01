@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}MFA / 2FA Setup — TCS Identity Platform{% endblock %}
+
+{% block head %}
+<style>
+    .mfa-option-card {
+        border-radius: 14px;
+        padding: 24px;
+        border: 2px solid #e5e7eb;
+        transition: all .2s;
+        background: #fff;
+        height: 100%;
+    }
+    .mfa-option-card:hover { border-color: #2563eb; box-shadow: 0 4px 20px rgba(37,99,235,0.1); }
+    .mfa-option-card.recommended { border-color: #16a34a; }
+    .mfa-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 16px; }
+    .section-header { background: linear-gradient(135deg, #1e3a5f 0%, #7c3aed 100%); color: #fff; border-radius: 12px; padding: 22px 28px; margin-bottom: 28px; }
+    .step-circle { width: 32px; height: 32px; border-radius: 50%; background: #dbeafe; color: #1d4ed8; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
+    .step-line { border-left: 2px solid #e5e7eb; margin-left: 15px; padding-left: 20px; padding-bottom: 16px; }
+    .pro-con-badge { font-size: 0.68rem; padding: 2px 8px; border-radius: 20px; }
+    .pro { background: #dcfce7; color: #15803d; }
+    .con { background: #fee2e2; color: #b91c1c; }
+    .policy-banner { border-radius: 12px; padding: 20px 24px; border: 2px solid; }
+    .policy-required { background: #fef3c7; border-color: #fbbf24; }
+    .policy-optional { background: #f0fdf4; border-color: #86efac; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-header d-flex justify-content-between align-items-start">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-shield-lock-fill me-2"></i>Multi-Factor Authentication</h4>
+        <p class="mb-0 opacity-75 small">Configure 2FA / MFA options for your organisation. Auth0 enforces these policies at login.</p>
+    </div>
+    <a href="/subscription/dashboard" class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);">
+        <i class="bi bi-arrow-left me-1"></i>Back
+    </a>
+</div>
+
+<!-- Current Policy Banner -->
+{% if org %}
+<div class="policy-banner mb-4 {% if org.mfa_required %}policy-required{% else %}policy-optional{% endif %}">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            {% if org.mfa_required %}
+            <h6 class="fw-bold mb-1"><i class="bi bi-shield-fill-check text-warning me-2"></i>MFA is REQUIRED for {{ org.name }}</h6>
+            <p class="text-muted small mb-0">All users in this organisation must complete 2FA at every login.</p>
+            {% else %}
+            <h6 class="fw-bold mb-1"><i class="bi bi-shield text-success me-2"></i>MFA is Optional for {{ org.name }}</h6>
+            <p class="text-muted small mb-0">Users can choose to enrol in 2FA — it's not enforced at login.</p>
+            {% endif %}
+        </div>
+        <div>
+            {% if org.mfa_required %}
+            <button class="btn btn-sm btn-outline-secondary" onclick="toggleMFA('{{ org.id }}', false)">
+                <i class="bi bi-unlock me-1"></i>Make Optional
+            </button>
+            {% else %}
+            <button class="btn btn-sm btn-warning" onclick="toggleMFA('{{ org.id }}', true)">
+                <i class="bi bi-shield-fill-check me-1"></i>Require MFA
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- MFA Options -->
+<h5 class="fw-semibold mb-3"><i class="bi bi-list-check me-2 text-primary"></i>Available MFA Methods</h5>
+<div class="row g-4 mb-5">
+
+    <!-- TOTP -->
+    <div class="col-md-4">
+        <div class="mfa-option-card recommended">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="mfa-icon" style="background:#dcfce7;">
+                    <i class="bi bi-phone text-success"></i>
+                </div>
+                <span class="badge bg-success">Most Secure</span>
+            </div>
+            <h6 class="fw-bold mb-1">TOTP — Authenticator App</h6>
+            <p class="text-muted small mb-3">Google Authenticator, Authy, 1Password, or any TOTP-compatible app. Generates a 6-digit code every 30 seconds.</p>
+            <div class="d-flex flex-wrap gap-1 mb-3">
+                <span class="pro-con-badge pro"><i class="bi bi-check me-1"></i>Works offline</span>
+                <span class="pro-con-badge pro"><i class="bi bi-check me-1"></i>No SIM swap</span>
+                <span class="pro-con-badge pro"><i class="bi bi-check me-1"></i>Industry standard</span>
+                <span class="pro-con-badge con"><i class="bi bi-x me-1"></i>Requires app install</span>
+            </div>
+            <div class="text-muted small mb-3">
+                <strong>How it works:</strong> User scans a QR code once. App generates TOTP codes locally — no network required.
+            </div>
+            <button class="btn btn-success btn-sm w-100" onclick="enrollMFA()">
+                <i class="bi bi-qr-code-scan me-1"></i>Enable TOTP
+            </button>
+        </div>
+    </div>
+
+    <!-- SMS OTP -->
+    <div class="col-md-4">
+        <div class="mfa-option-card">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="mfa-icon" style="background:#dbeafe;">
+                    <i class="bi bi-chat-text text-primary"></i>
+                </div>
+                <span class="badge bg-primary">Easy for Users</span>
+            </div>
+            <h6 class="fw-bold mb-1">SMS OTP</h6>
+            <p class="text-muted small mb-3">A one-time code sent via text message to the user's phone number. Supported by Auth0 natively.</p>
+            <div class="d-flex flex-wrap gap-1 mb-3">
+                <span class="pro-con-badge pro"><i class="bi bi-check me-1"></i>No app needed</span>
+                <span class="pro-con-badge pro"><i class="bi bi-check me-1"></i>Familiar to all users</span>
+                <span class="pro-con-badge con"><i class="bi bi-x me-1"></i>SIM swap risk</span>
+                <span class="pro-con-badge con"><i class="bi bi-x me-1"></i>Needs phone signal</span>
+            </div>
+            <div class="text-muted small mb-3">
+                <strong>How it works:</strong> Auth0 sends a 6-digit code via SMS. User enters it within 5 minutes. Requires Twilio integration.
+            </div>
+            <button class="btn btn-primary btn-sm w-100" onclick="enrollMFA()">
+                <i class="bi bi-phone me-1"></i>Enable SMS OTP
+            </button>
+        </div>
+    </div>
+
+    <!-- Email OTP -->
+    <div class="col-md-4">
+        <div class="mfa-option-card">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="mfa-icon" style="background:#f3e8ff;">
+                    <i class="bi bi-envelope-check" style="color:#7c3aed;"></i>
+                </div>
+                <span class="badge" style="background:#7c3aed;color:#fff;">Zero Friction</span>
+            </div>
+            <h6 class="fw-bold mb-1">Email OTP</h6>
+            <p class="text-muted small mb-3">A one-time code sent to the user's verified email address. Zero infrastructure — works with existing email setup.</p>
+            <div class="d-flex flex-wrap gap-1 mb-3">
+                <span class="pro-con-badge pro"><i class="bi bi-check me-1"></i>Zero setup</span>
+                <span class="pro-con-badge pro"><i class="bi bi-check me-1"></i>Works everywhere</span>
+                <span class="pro-con-badge con"><i class="bi bi-x me-1"></i>Email inbox access = bypass</span>
+                <span class="pro-con-badge con"><i class="bi bi-x me-1"></i>Lower security than TOTP</span>
+            </div>
+            <div class="text-muted small mb-3">
+                <strong>How it works:</strong> Auth0 emails a 6-digit code to the user's verified address. No additional configuration needed.
+            </div>
+            <button class="btn btn-sm btn-outline-secondary w-100" onclick="enrollMFA()">
+                <i class="bi bi-envelope me-1"></i>Enable Email OTP
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Enrol My MFA -->
+<div class="card mb-5" style="border-color:#6366f1;">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="fw-bold mb-1"><i class="bi bi-person-check me-2 text-primary"></i>Enrol Your Own 2FA</h6>
+                <p class="text-muted small mb-0">Start the Auth0 MFA enrollment flow for your own account. You'll be redirected to Auth0 to set up your chosen method.</p>
+            </div>
+            <a href="/mfa/enroll" class="btn btn-primary">
+                <i class="bi bi-shield-check me-1"></i>Enrol My MFA
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- How 2FA Works at Login -->
+<div class="card">
+    <div class="card-header bg-white fw-semibold"><i class="bi bi-diagram-3 me-2 text-primary"></i>How 2FA Works at Login</div>
+    <div class="card-body p-4">
+        <div class="row g-0">
+            {% set steps = [
+                ("bi-person-fill-gear", "#dbeafe", "#1d4ed8", "User enters email + password", "Standard credentials are validated by Auth0's Username-Password-Authentication connection."),
+                ("bi-shield-shaded", "#f3e8ff", "#7c3aed", "Auth0 checks MFA policy", "If the organisation has mfa_required=true (or acr_values=multi-factor), Auth0 prompts for 2nd factor."),
+                ("bi-phone-vibrate", "#dcfce7", "#15803d", "User completes 2nd factor", "TOTP code from app, SMS code, or email OTP — user enters the 6-digit one-time code."),
+                ("bi-check2-circle", "#fef3c7", "#b45309", "Auth0 issues thin JWT", "Token contains sub · email · email_verified only. Platform DB resolves role, tier, permissions."),
+                ("bi-grid-1x2", "#ffe4e6", "#be123c", "Platform grants access", "Backend verifies JWT, looks up tenant context, enforces entitlements — user is in.")
+            ] %}
+            {% for icon, bg, color, title, desc in steps %}
+            <div class="col-12 d-flex gap-3 mb-3">
+                <div>
+                    <div style="background:{{ bg }};border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="bi {{ icon }}" style="color:{{ color }};"></i>
+                    </div>
+                    {% if not loop.last %}
+                    <div style="width:2px;background:#e5e7eb;margin:4px auto;height:24px;"></div>
+                    {% endif %}
+                </div>
+                <div class="pt-1">
+                    <div class="fw-semibold small">{{ title }}</div>
+                    <div class="text-muted small">{{ desc }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function enrollMFA() {
+    window.location.href = '/mfa/enroll';
+}
+
+async function toggleMFA(orgId, required) {
+    try {
+        const resp = await fetch(`/api/mfa/org/${orgId}/require`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({required})
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'Request failed');
+        showToast(`MFA ${required ? 'required' : 'made optional'} for org. Refreshing…`, 'success');
+        setTimeout(() => location.reload(), 1200);
+    } catch(e) {
+        showToast('Error: ' + e.message, 'danger');
+    }
+}
+
+function showToast(message, type) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible shadow mb-0`;
+    toast.style.cssText = 'min-width:260px;font-size:0.85rem;';
+    toast.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}My Identity — TCS Identity Platform{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h4 class="fw-bold mb-1">My Identity Context</h4>
+    <p class="text-muted small">
+        This page shows what <code>GET /api/me</code> returns —
+        the difference between what the IdP (Auth0) asserts and what the platform resolves.
+    </p>
+</div>
+
+<div class="row g-3">
+    <!-- IdP Claims (thin) -->
+    <div class="col-md-5">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <div class="p-2 rounded" style="background: #fef3c7;">
+                    <i class="bi bi-key-fill" style="color: #b45309;"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-0">IdP Claims (Auth0 JWT)</h6>
+                    <small class="text-muted">What the token asserts — nothing more</small>
+                </div>
+            </div>
+
+            <div class="code-block">
+<pre id="idpClaimsJson">{{ idp_claims | tojson(indent=2) }}</pre>
+            </div>
+
+            <div class="alert alert-warning mt-3 mb-0 py-2 px-3 small">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                <strong>Note:</strong> No roles, org IDs, or entitlements appear here.
+                The JWT is deliberately thin.
+            </div>
+        </div>
+    </div>
+
+    <!-- Arrow -->
+    <div class="col-md-1 d-flex align-items-center justify-content-center">
+        <i class="bi bi-arrow-right-circle-fill text-muted" style="font-size: 2rem;"></i>
+    </div>
+
+    <!-- Platform Context (resolved) -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <div class="p-2 rounded" style="background: #dcfce7;">
+                    <i class="bi bi-database-fill" style="color: #15803d;"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-0">Platform Context (resolved from DB)</h6>
+                    <small class="text-muted">Looked up by sub — source of truth for authz</small>
+                </div>
+            </div>
+
+            <div class="code-block">
+<pre id="platformContextJson">{{ platform_context | tojson(indent=2) }}</pre>
+            </div>
+
+            <div class="alert alert-arch mt-3 mb-0 py-2 px-3 small">
+                <i class="bi bi-info-circle me-1"></i>
+                The backend always resolves context from the DB after validating the JWT.
+                Roles and entitlements are <strong>never trusted from the token</strong>.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Full /api/me response -->
+<div class="card p-4 mt-3">
+    <h6 class="fw-bold mb-3">
+        <i class="bi bi-braces me-2 text-primary"></i>Full <code>GET /api/me</code> response
+    </h6>
+    <div class="code-block">
+<pre>{{ full_response | tojson(indent=2) }}</pre>
+    </div>
+    <p class="text-muted small mt-3 mb-0">
+        To call this endpoint programmatically, include your access token:
+        <code>Authorization: Bearer &lt;access_token&gt;</code>
+    </p>
+</div>
+
+<!-- Approval flow visualiser -->
+<div class="card p-4 mt-3">
+    <h6 class="fw-bold mb-3">
+        <i class="bi bi-diagram-3 me-2 text-primary"></i>Your Approval Journey
+    </h6>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        {% set states = [
+            ('invited', 'Invited', 'bi-envelope'),
+            ('pending_approval', 'Pending Approval', 'bi-hourglass-split'),
+            ('in_review', 'In Review', 'bi-eye'),
+            ('active', 'Active', 'bi-check-circle-fill'),
+        ] %}
+        {% for state_key, state_label, state_icon in states %}
+            {% set is_current = platform_context.status == state_key %}
+            {% set is_past = (
+                (state_key == 'invited' and platform_context.status in ['pending_approval', 'in_review', 'active']) or
+                (state_key == 'pending_approval' and platform_context.status in ['in_review', 'active']) or
+                (state_key == 'in_review' and platform_context.status == 'active')
+            ) %}
+            <div class="d-flex align-items-center gap-2">
+                <div class="text-center" style="min-width: 80px;">
+                    <div class="p-2 rounded-circle mx-auto mb-1 {% if is_current %}bg-primary{% elif is_past %}bg-success{% else %}bg-light border{% endif %}"
+                         style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi {{ state_icon }} {% if is_current or is_past %}text-white{% else %}text-muted{% endif %}"></i>
+                    </div>
+                    <small class="{% if is_current %}fw-bold text-primary{% elif is_past %}text-success{% else %}text-muted{% endif %}" style="font-size: 0.7rem;">
+                        {{ state_label }}
+                    </small>
+                </div>
+                {% if not loop.last %}
+                <i class="bi bi-arrow-right text-muted"></i>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Pretty-print JSON in code blocks
+document.querySelectorAll('.code-block pre').forEach(pre => {
+    try {
+        const parsed = JSON.parse(pre.textContent);
+        pre.textContent = JSON.stringify(parsed, null, 2);
+    } catch(e) {}
+});
+</script>
+{% endblock %}

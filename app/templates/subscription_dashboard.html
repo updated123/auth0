@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+{% block title %}Subscription & Billing — TCS Identity Platform{% endblock %}
+
+{% block head %}
+<style>
+    .tier-card { border-radius: 14px; padding: 24px; transition: all .2s; }
+    .tier-card.highlighted { border: 2px solid #2563eb !important; }
+    .tier-free { background: #f8fafc; border: 1px solid #e5e7eb; }
+    .tier-professional { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .tier-enterprise { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .feature-tick { color: #16a34a; font-size: 1rem; }
+    .feature-cross { color: #d1d5db; font-size: 1rem; }
+    .addon-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+    .table-org td, .table-org th { vertical-align: middle; }
+    .mfa-toggle { cursor: pointer; }
+    .tier-selector { cursor: pointer; }
+    .section-header { background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); color: #fff; border-radius: 12px; padding: 24px 28px; margin-bottom: 28px; }
+    .tcs-badge { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: #fff; font-size: 0.7rem; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+    .addon-toggle-btn { font-size: 0.72rem; padding: 2px 10px; border-radius: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-header d-flex justify-content-between align-items-start">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-credit-card-2-front me-2"></i>Subscription &amp; Billing</h4>
+        <p class="mb-0 opacity-75 small">Manage organisation tiers, add-ons, and MFA policies across all tenants.</p>
+    </div>
+    <span class="tcs-badge"><i class="bi bi-shield-fill-check me-1"></i>TCS Admin</span>
+</div>
+
+<!-- Tier Comparison Table -->
+<div class="card mb-4">
+    <div class="card-header bg-white fw-semibold"><i class="bi bi-table me-2 text-primary"></i>Tier Comparison</div>
+    <div class="card-body p-4">
+        <div class="row g-3">
+            {% for tier_key, tier in tier_features.items() %}
+            <div class="col-md-4">
+                <div class="tier-card tier-{{ tier_key }} h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">{{ tier.label }}</h6>
+                        <span class="badge bg-{{ tier.color }}">{{ tier.price }}</span>
+                    </div>
+                    <div class="small text-muted mb-3">
+                        {% if tier.max_users == -1 %}
+                            <i class="bi bi-people me-1"></i>Unlimited users
+                        {% else %}
+                            <i class="bi bi-people me-1"></i>Up to {{ tier.max_users }} users
+                        {% endif %}
+                    </div>
+                    <ul class="list-unstyled small mb-3">
+                        {% for feature in tier.features %}
+                        <li class="mb-1"><i class="bi bi-check-circle-fill feature-tick me-1"></i>{{ feature }}</li>
+                        {% endfor %}
+                    </ul>
+                    <div class="d-flex gap-2 flex-wrap mt-auto">
+                        {% if tier.mfa %}
+                        <span class="badge bg-success"><i class="bi bi-shield-check me-1"></i>MFA</span>
+                        {% else %}
+                        <span class="badge bg-light text-muted border">No MFA</span>
+                        {% endif %}
+                        {% if tier.sso %}
+                        <span class="badge bg-info text-dark"><i class="bi bi-key me-1"></i>SSO</span>
+                        {% else %}
+                        <span class="badge bg-light text-muted border">No SSO</span>
+                        {% endif %}
+                        {% if tier.api %}
+                        <span class="badge bg-warning text-dark"><i class="bi bi-plug me-1"></i>API</span>
+                        {% else %}
+                        <span class="badge bg-light text-muted border">No API</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Per-org table -->
+<div class="card mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center fw-semibold">
+        <span><i class="bi bi-building me-2 text-primary"></i>Organisation Subscriptions</span>
+        <span class="badge bg-secondary">{{ org_data | length }} orgs</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-org mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Organisation</th>
+                        <th>Current Tier</th>
+                        <th>Users</th>
+                        <th>Add-ons</th>
+                        <th>MFA Required</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for org in org_data %}
+                    <tr id="org-row-{{ org.id }}">
+                        <td>
+                            <div class="fw-semibold">{{ org.name }}</div>
+                            <div class="text-muted" style="font-size:0.75rem;">{{ org.id }}</div>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ org.tier_info.color }} tier-badge-{{ org.id }}">
+                                {{ org.tier_info.label }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="user-count-{{ org.id }}">{{ org.user_count }}</span>
+                            {% if org.tier_info.max_users != -1 %}
+                            <span class="text-muted small">/ {{ org.tier_info.max_users }}</span>
+                            {% else %}
+                            <span class="text-muted small">/ ∞</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="addon-display-{{ org.id }} d-flex flex-wrap gap-1">
+                                {% if org.addon_list %}
+                                    {% for addon in org.addon_list %}
+                                    <span class="badge bg-info text-dark addon-badge">{{ addon.label }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted small">None</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-check form-switch mfa-toggle" title="Toggle MFA requirement">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="mfa-{{ org.id }}"
+                                       {% if org.mfa_required %}checked{% endif %}
+                                       onchange="toggleMFA('{{ org.id }}', this.checked)">
+                                <label class="form-check-label small" for="mfa-{{ org.id }}">
+                                    {% if org.mfa_required %}Required{% else %}Optional{% endif %}
+                                </label>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-gear me-1"></i>Manage
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" style="min-width:260px;">
+                                    <li><h6 class="dropdown-header">Change Tier</h6></li>
+                                    {% for tier_key, tier in tier_features.items() %}
+                                    <li>
+                                        <a class="dropdown-item tier-selector d-flex justify-content-between align-items-center
+                                            {% if org.tier == tier_key %}fw-bold text-primary{% endif %}"
+                                           href="#"
+                                           onclick="changeTier('{{ org.id }}', '{{ tier_key }}'); return false;">
+                                            <span>
+                                                {% if org.tier == tier_key %}<i class="bi bi-check me-1"></i>{% endif %}
+                                                {{ tier.label }}
+                                            </span>
+                                            <span class="badge bg-{{ tier.color }} ms-2">{{ tier.price }}</span>
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header">Add-ons</h6></li>
+                                    {% for addon_key, addon in available_addons.items() %}
+                                    <li>
+                                        <div class="dropdown-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="small fw-semibold">{{ addon.label }}</div>
+                                                <div style="font-size:0.7rem;" class="text-muted">{{ addon.price }}</div>
+                                            </div>
+                                            <button class="btn addon-toggle-btn
+                                                {% if addon_key in org.add_ons %}btn-danger{% else %}btn-outline-primary{% endif %}"
+                                                    onclick="toggleAddon('{{ org.id }}', '{{ addon_key }}', {% if addon_key in org.add_ons %}false{% else %}true{% endif %}); return false;"
+                                                    id="addon-btn-{{ org.id }}-{{ addon_key }}">
+                                                {% if addon_key in org.add_ons %}Disable{% else %}Enable{% endif %}
+                                            </button>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item small" href="/permissions/{{ org.id }}">
+                                            <i class="bi bi-shield-lock me-1"></i>Permission Profiles
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Quick links -->
+<div class="row g-3">
+    <div class="col-md-4">
+        <a href="/mfa/setup" class="card text-decoration-none h-100" style="border-color:#e5e7eb;">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="background:#dbeafe;border-radius:10px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-shield-lock text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold">MFA / 2FA Setup</div>
+                        <div class="text-muted small">Configure multi-factor authentication options</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% for org in org_data %}
+    <div class="col-md-4">
+        <a href="/permissions/{{ org.id }}" class="card text-decoration-none h-100" style="border-color:#e5e7eb;">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="background:#f0fdf4;border-radius:10px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-person-badge text-success"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold">{{ org.name }} Permissions</div>
+                        <div class="text-muted small">Manage profiles &amp; user grants</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function changeTier(orgId, tier) {
+    try {
+        const resp = await fetch(`/api/subscription/org/${orgId}/tier`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({tier})
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'Request failed');
+
+        // Update badge
+        const badge = document.querySelector(`.tier-badge-${orgId}`);
+        if (badge) {
+            badge.textContent = data.tier_info.label;
+            badge.className = `badge bg-${data.tier_info.color} tier-badge-${orgId}`;
+        }
+
+        // Update user count max
+        const countEl = document.querySelector(`.user-count-${orgId}`);
+        if (countEl) {
+            const maxEl = countEl.nextElementSibling;
+            if (maxEl) {
+                maxEl.textContent = data.tier_info.max_users === -1 ? '/ ∞' : `/ ${data.tier_info.max_users}`;
+            }
+        }
+
+        showToast(`Tier updated to ${data.tier_info.label} for ${data.org_name}`, 'success');
+    } catch (e) {
+        showToast('Failed to update tier: ' + e.message, 'danger');
+    }
+}
+
+async function toggleAddon(orgId, addonKey, enable) {
+    try {
+        const resp = await fetch(`/api/subscription/org/${orgId}/addon`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({addon: addonKey, enabled: enable})
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'Request failed');
+
+        // Update button state
+        const btn = document.getElementById(`addon-btn-${orgId}-${addonKey}`);
+        if (btn) {
+            if (enable) {
+                btn.textContent = 'Disable';
+                btn.className = 'btn addon-toggle-btn btn-danger';
+                btn.setAttribute('onclick', `toggleAddon('${orgId}', '${addonKey}', false); return false;`);
+            } else {
+                btn.textContent = 'Enable';
+                btn.className = 'btn addon-toggle-btn btn-outline-primary';
+                btn.setAttribute('onclick', `toggleAddon('${orgId}', '${addonKey}', true); return false;`);
+            }
+        }
+
+        // Refresh add-on display badges
+        const displayDiv = document.querySelector(`.addon-display-${orgId}`);
+        if (displayDiv && data.add_ons !== undefined) {
+            const addonLabels = {
+                analytics: 'Advanced Analytics',
+                data_export: 'Bulk Data Export',
+                api_access: 'API Access',
+                sso: 'SSO / SAML'
+            };
+            if (data.add_ons.length === 0) {
+                displayDiv.innerHTML = '<span class="text-muted small">None</span>';
+            } else {
+                displayDiv.innerHTML = data.add_ons.map(k =>
+                    `<span class="badge bg-info text-dark addon-badge">${addonLabels[k] || k}</span>`
+                ).join(' ');
+            }
+        }
+
+        showToast(`Add-on ${enable ? 'enabled' : 'disabled'}: ${addonKey}`, 'success');
+    } catch (e) {
+        showToast('Failed to toggle add-on: ' + e.message, 'danger');
+    }
+}
+
+async function toggleMFA(orgId, required) {
+    try {
+        const resp = await fetch(`/api/mfa/org/${orgId}/require`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({required})
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'Request failed');
+
+        const label = document.querySelector(`label[for="mfa-${orgId}"]`);
+        if (label) label.textContent = required ? 'Required' : 'Optional';
+
+        showToast(`MFA ${required ? 'required' : 'made optional'} for org`, 'success');
+    } catch (e) {
+        showToast('Failed to update MFA: ' + e.message, 'danger');
+        // Revert toggle
+        const toggle = document.getElementById(`mfa-${orgId}`);
+        if (toggle) toggle.checked = !required;
+    }
+}
+
+function showToast(message, type) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible shadow mb-0`;
+    toast.style.cssText = 'min-width:260px;font-size:0.85rem;';
+    toast.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+</script>
+{% endblock %}

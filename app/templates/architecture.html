@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture — TCS Identity Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background: #0f172a; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .arch-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 28px; }
+        .arch-card.blue-accent { border-top: 3px solid #2563eb; }
+        .arch-card.green-accent { border-top: 3px solid #16a34a; }
+        .section-label-blue { background: #1e40af22; border: 1px solid #2563eb; color: #93c5fd; padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+        .section-label-green { background: #14532d22; border: 1px solid #16a34a; color: #4ade80; padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+        .feature-row { padding: 14px 0; border-bottom: 1px solid #1e293b; }
+        .feature-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .feature-row:first-child { padding-top: 0; }
+        .badge-live { background: #14532d; color: #4ade80; border: 1px solid #16a34a; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+        .badge-demo { background: #1e3a8a; color: #93c5fd; border: 1px solid #2563eb; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+        .feature-link { color: #64748b; font-size: 0.75rem; font-family: monospace; text-decoration: none; padding: 2px 8px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; transition: all .15s; }
+        .feature-link:hover { color: #93c5fd; border-color: #2563eb; }
+        .feature-desc { color: #94a3b8; font-size: 0.8rem; }
+        .tag { background: #1e40af22; border: 1px solid #1e40af; color: #93c5fd; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .jwt-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 28px; }
+        .jwt-pill { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 16px; font-family: monospace; font-size: 0.85rem; color: #94a3b8; }
+        .jwt-pill strong { color: #f1f5f9; }
+        .flow-arrow { font-size: 1.4rem; color: #334155; display: flex; align-items: center; justify-content: center; }
+        .flow-step { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px 18px; font-size: 0.85rem; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="container-xl py-5">
+
+    <!-- Header -->
+    <div class="text-center mb-5">
+        <div class="mb-3"><span class="tag">Architecture</span></div>
+        <h1 class="fw-bold" style="font-size: 2rem; letter-spacing: -0.5px;">
+            <i class="bi bi-diagram-3 text-primary me-2"></i>TCS Identity Platform — Architecture
+        </h1>
+        <p class="text-secondary mt-2" style="font-size: 1rem;">
+            How Auth0 (IdP) and Platform Backend divide responsibilities
+        </p>
+    </div>
+
+    <!-- Two-column architecture cards -->
+    <div class="row g-4 mb-4">
+
+        <!-- LEFT: Auth0 / IdP -->
+        <div class="col-lg-6">
+            <div class="arch-card blue-accent h-100">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div style="background:#1e40af22;border-radius:12px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="bi bi-shield-check" style="color:#93c5fd;font-size:1.4rem;"></i>
+                    </div>
+                    <div>
+                        <div class="section-label-blue mb-1"><i class="bi bi-cloud"></i> Identity Provider</div>
+                        <h5 class="fw-bold mb-0">Auth0 (Okta CIC)</h5>
+                    </div>
+                </div>
+
+                <!-- Authentication -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">Authentication</span>
+                                <span class="badge-live">Live</span>
+                            </div>
+                            <div class="feature-desc">PKCE Authorization Code Flow with PKCE challenge</div>
+                        </div>
+                        <a href="/social-login" class="feature-link flex-shrink-0">/social-login</a>
+                    </div>
+                </div>
+
+                <!-- Login / Session Management -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">Login / Session Management</span>
+                                <span class="badge-live">Live</span>
+                            </div>
+                            <div class="feature-desc">OAuth 2.0 tokens, session cookies, token refresh</div>
+                        </div>
+                        <a href="/login" class="feature-link flex-shrink-0">/login</a>
+                    </div>
+                </div>
+
+                <!-- Password Reset -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">Password Reset</span>
+                                <span class="badge-live">Live</span>
+                            </div>
+                            <div class="feature-desc">Auth0 sends secure one-time reset link via email</div>
+                        </div>
+                        <a href="/forgot-password" class="feature-link flex-shrink-0">/forgot-password</a>
+                    </div>
+                </div>
+
+                <!-- MFA / OTP -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">MFA / OTP</span>
+                                <span class="badge-demo">Demo</span>
+                            </div>
+                            <div class="feature-desc">TOTP, SMS OTP, Email OTP — enforced at Auth0 level</div>
+                        </div>
+                        <a href="/mfa/setup" class="feature-link flex-shrink-0">/mfa/setup</a>
+                    </div>
+                </div>
+
+                <!-- Invitation Flows -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">Invitation Flows</span>
+                                <span class="badge-live">Live</span>
+                            </div>
+                            <div class="feature-desc">Auth0 org invitations — user sets own password</div>
+                        </div>
+                        <a href="/tcs/dashboard" class="feature-link flex-shrink-0">/tcs/dashboard</a>
+                    </div>
+                </div>
+
+                <!-- Account Recovery -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">Account Recovery</span>
+                                <span class="badge-demo">Demo</span>
+                            </div>
+                            <div class="feature-desc">Locked account unlock, email verification resend</div>
+                        </div>
+                        <a href="/account-recovery" class="feature-link flex-shrink-0">/account-recovery</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- RIGHT: Platform Backend -->
+        <div class="col-lg-6">
+            <div class="arch-card green-accent h-100">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div style="background:#14532d22;border-radius:12px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="bi bi-database-check" style="color:#4ade80;font-size:1.4rem;"></i>
+                    </div>
+                    <div>
+                        <div class="section-label-green mb-1"><i class="bi bi-server"></i> Platform Backend</div>
+                        <h5 class="fw-bold mb-0">Platform DB (SQLite / FastAPI)</h5>
+                    </div>
+                </div>
+
+                <!-- Tenant / Company Membership -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">Tenant / Company Membership</span>
+                                <span class="badge-live">Live</span>
+                            </div>
+                            <div class="feature-desc">org_id on every user, org-scoped queries throughout</div>
+                        </div>
+                        <a href="/tcs/dashboard" class="feature-link flex-shrink-0">/tcs/dashboard</a>
+                    </div>
+                </div>
+
+                <!-- Business Roles -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">Business Roles</span>
+                                <span class="badge-live">Live</span>
+                            </div>
+                            <div class="feature-desc">admin / member / analyst / viewer — assigned post-signup</div>
+                        </div>
+                        <a href="/permissions/org_acmecorp" class="feature-link flex-shrink-0">/permissions/org_acmecorp</a>
+                    </div>
+                </div>
+
+                <!-- Entitlements -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">Entitlements</span>
+                                <span class="badge-live">Live</span>
+                            </div>
+                            <div class="feature-desc">reports:read, data:export, api:access etc — from permission profiles</div>
+                        </div>
+                        <a href="/permissions/org_acmecorp" class="feature-link flex-shrink-0">/permissions/org_acmecorp</a>
+                    </div>
+                </div>
+
+                <!-- Subscriptions -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">Subscriptions</span>
+                                <span class="badge-live">Live</span>
+                            </div>
+                            <div class="feature-desc">Free / Professional / Enterprise tiers per org</div>
+                        </div>
+                        <a href="/subscription/dashboard" class="feature-link flex-shrink-0">/subscription/dashboard</a>
+                    </div>
+                </div>
+
+                <!-- Feature Access -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">Feature Access</span>
+                                <span class="badge-live">Live</span>
+                            </div>
+                            <div class="feature-desc">Tier gating — features unlocked based on subscription</div>
+                        </div>
+                        <a href="/subscription/dashboard" class="feature-link flex-shrink-0">/subscription/dashboard</a>
+                    </div>
+                </div>
+
+                <!-- Document Access -->
+                <div class="feature-row">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold" style="font-size:0.9rem;">Document Access</span>
+                                <span class="badge-demo">Demo</span>
+                            </div>
+                            <div class="feature-desc">Resource-level access control from JWT sub → DB entitlements</div>
+                        </div>
+                        <a href="/documents" class="feature-link flex-shrink-0">/documents</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Thin JWT Architecture explainer -->
+    <div class="jwt-card mb-4">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div style="background:#1e40af22;border-radius:12px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="bi bi-key-fill" style="color:#93c5fd;font-size:1.2rem;"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-0">Thin JWT Architecture</h5>
+                <p class="text-secondary small mb-0">Auth0 issues minimal tokens — the platform DB resolves all business context at runtime</p>
+            </div>
+        </div>
+
+        <div class="row g-3 align-items-center">
+            <!-- JWT contains -->
+            <div class="col-md-5">
+                <div class="mb-2 text-secondary small fw-semibold"><i class="bi bi-file-earmark-lock me-1"></i>Auth0 JWT contains ONLY:</div>
+                <div class="jwt-pill">
+                    <strong>sub</strong> · <strong>email</strong> · <strong>email_verified</strong> · <strong>exp</strong>
+                </div>
+                <div class="text-secondary" style="font-size:0.72rem;margin-top:6px;">No roles, no permissions, no tenant data in the token</div>
+            </div>
+
+            <!-- Arrow -->
+            <div class="col-md-2 text-center">
+                <div class="flow-arrow"><i class="bi bi-arrow-right-circle-fill text-primary" style="font-size:2rem;"></i></div>
+                <div class="text-secondary" style="font-size:0.7rem;margin-top:4px;">DB lookup on every request</div>
+            </div>
+
+            <!-- Platform resolves -->
+            <div class="col-md-5">
+                <div class="mb-2 text-secondary small fw-semibold"><i class="bi bi-database me-1 text-success"></i>Platform DB resolves:</div>
+                <div class="jwt-pill">
+                    <strong style="color:#4ade80;">org_id</strong> · <strong style="color:#4ade80;">role</strong> · <strong style="color:#4ade80;">entitlements</strong> · <strong style="color:#4ade80;">subscription</strong> · <strong style="color:#4ade80;">feature flags</strong>
+                </div>
+                <div class="text-secondary" style="font-size:0.72rem;margin-top:6px;">Full business context resolved from <code style="color:#94a3b8;">sub</code> claim</div>
+            </div>
+        </div>
+
+        <!-- Flow steps -->
+        <div class="mt-4 pt-3" style="border-top:1px solid #334155;">
+            <div class="text-secondary small fw-semibold mb-3"><i class="bi bi-diagram-2 me-1"></i>Request flow:</div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="flow-step">
+                    <i class="bi bi-box-arrow-in-right text-primary me-1"></i>
+                    <strong>Login</strong>
+                    <div class="text-secondary" style="font-size:0.7rem;">User authenticates</div>
+                </div>
+                <div class="flow-arrow"><i class="bi bi-arrow-right text-secondary"></i></div>
+                <div class="flow-step">
+                    <i class="bi bi-file-earmark-lock text-warning me-1"></i>
+                    <strong>Thin JWT</strong>
+                    <div class="text-secondary" style="font-size:0.7rem;">sub + email only</div>
+                </div>
+                <div class="flow-arrow"><i class="bi bi-arrow-right text-secondary"></i></div>
+                <div class="flow-step">
+                    <i class="bi bi-database text-success me-1"></i>
+                    <strong>Platform DB Lookup</strong>
+                    <div class="text-secondary" style="font-size:0.7rem;">sub → org, role, entitlements</div>
+                </div>
+                <div class="flow-arrow"><i class="bi bi-arrow-right text-secondary"></i></div>
+                <div class="flow-step">
+                    <i class="bi bi-check2-circle text-success me-1"></i>
+                    <strong>Full Context</strong>
+                    <div class="text-secondary" style="font-size:0.7rem;">Tenant-scoped access granted</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back button -->
+    <div class="text-center">
+        <a href="/demo" class="btn btn-outline-secondary px-4">
+            <i class="bi bi-arrow-left me-2"></i>Back to Demo
+        </a>
+    </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

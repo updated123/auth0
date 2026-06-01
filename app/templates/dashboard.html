@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — TCS Identity Platform{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Dashboard</h4>
+        <p class="text-muted small mb-0">Welcome back, {{ user.email }}</p>
+    </div>
+    <span class="badge bg-success">
+        <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>Active
+    </span>
+</div>
+
+<!-- Architecture notice -->
+<div class="alert alert-arch mb-4">
+    <i class="bi bi-info-circle-fill me-2" style="color: #2563eb;"></i>
+    <strong>Architecture demo:</strong> The JWT sent to this server contains only
+    <code>sub</code>, <code>email</code>, and <code>email_verified</code>.
+    Your role (<strong>{{ user.role }}</strong>) and entitlements were resolved from the
+    <strong>Platform Database</strong> — not from the token.
+</div>
+
+<!-- Stats row -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2 rounded" style="background: #dbeafe;">
+                    <i class="bi bi-person-badge text-primary" style="font-size: 1.3rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">Role</p>
+                    <p class="fw-bold mb-0">{{ user.role or "—" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2 rounded" style="background: #dcfce7;">
+                    <i class="bi bi-building text-success" style="font-size: 1.3rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">Organisation</p>
+                    <p class="fw-bold mb-0">{{ user.org_id }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2 rounded" style="background: #f3e8ff;">
+                    <i class="bi bi-shield-check text-purple" style="font-size: 1.3rem; color: #7e22ce;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">Entitlements</p>
+                    <p class="fw-bold mb-0">{{ user.entitlements | length if user.entitlements else 0 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2 rounded" style="background: #fef3c7;">
+                    <i class="bi bi-patch-check text-warning" style="font-size: 1.3rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">Email Verified</p>
+                    <p class="fw-bold mb-0">{{ "Yes" if user.email_verified else "No" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Platform Identity -->
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">
+                <i class="bi bi-database me-2 text-primary"></i>Platform Context (from DB)
+            </h6>
+            <table class="table table-sm table-borderless">
+                <tbody>
+                    <tr>
+                        <td class="text-muted" style="width: 40%">Platform User ID</td>
+                        <td><code style="font-size: 0.75rem;">{{ user.id }}</code></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Email</td>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Organisation</td>
+                        <td>{{ user.org_id }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Role</td>
+                        <td><span class="badge bg-primary">{{ user.role or "none" }}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Status</td>
+                        <td>
+                            <span class="badge badge-status-{{ user.status }}">{{ user.status }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Entitlements</td>
+                        <td>
+                            {% if user.entitlements %}
+                                {% for e in user.entitlements %}
+                                    <span class="badge bg-light text-dark border me-1">{{ e }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">none</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">IdP Subject</td>
+                        <td><code style="font-size: 0.75rem;">{{ user.idp_sub or "not linked" }}</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- What's in the JWT -->
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">
+                <i class="bi bi-key me-2 text-warning"></i>Thin JWT Claims (IdP only asserts)
+            </h6>
+            <div class="code-block">
+<pre>{
+  "sub": "{{ user.idp_sub or 'auth0|...' }}",
+  "email": "{{ user.email }}",
+  "email_verified": {{ "true" if user.email_verified else "false" }}
+}</pre>
+            </div>
+            <p class="text-muted small mt-3 mb-0">
+                <i class="bi bi-info-circle me-1"></i>
+                Roles, org IDs, and entitlements are <strong>not</strong> in the JWT.
+                They are always resolved by the Platform Backend from the database
+                after token validation.
+            </p>
+        </div>
+
+        <div class="card p-4 mt-3">
+            <h6 class="fw-bold mb-3">
+                <i class="bi bi-link-45deg me-2 text-success"></i>Quick Links
+            </h6>
+            <div class="d-grid gap-2">
+                <a href="/me-page" class="btn btn-outline-primary btn-sm text-start">
+                    <i class="bi bi-person-badge me-2"></i>View full identity context (GET /api/me)
+                </a>
+                {% if user.role == 'platform_admin' %}
+                <a href="/api/admin/panel" class="btn btn-outline-secondary btn-sm text-start">
+                    <i class="bi bi-people me-2"></i>Admin panel — manage users
+                </a>
+                <a href="/approvals-page" class="btn btn-outline-secondary btn-sm text-start">
+                    <i class="bi bi-clipboard-check me-2"></i>Approval queue
+                </a>
+                {% endif %}
+                <a href="/docs" class="btn btn-outline-secondary btn-sm text-start">
+                    <i class="bi bi-book me-2"></i>OpenAPI documentation
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

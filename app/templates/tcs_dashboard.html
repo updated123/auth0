@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block title %}TCS Migration Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a href="/demo" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Demo Home
+            </a>
+            <span class="badge bg-dark px-3 py-2">TCS Super Admin — Option A</span>
+        </div>
+        <h4 class="fw-bold mb-1">TCS Admin Dashboard</h4>
+        <p class="text-muted small mb-0">
+            Migrate all legacy users (Kinsta DB) to Auth0 across every organisation.
+            Users receive an activation email and set their own new password — zero disruption.
+        </p>
+    </div>
+    <button class="btn btn-primary px-4" onclick="migrateAll(this)" {% if total_pending == 0 %}disabled{% endif %}>
+        <i class="bi bi-send-fill me-2"></i>
+        Migrate All Organisations
+        {% if total_pending > 0 %}
+        <span class="badge bg-white text-primary ms-2">{{ total_pending }} pending</span>
+        {% endif %}
+    </button>
+</div>
+
+<!-- Overall progress -->
+<div class="card p-4 mb-4">
+    <div class="row g-4 align-items-center">
+        <div class="col-md-3 text-center">
+            <div class="display-6 fw-bold text-primary">{{ overall_pct }}%</div>
+            <div class="text-muted small">Overall migration</div>
+        </div>
+        <div class="col-md-9">
+            <div class="progress mb-3" style="height: 12px; border-radius: 8px;">
+                <div class="progress-bar bg-success" style="width: {{ overall_pct }}%"></div>
+            </div>
+            <div class="row g-3 text-center">
+                <div class="col">
+                    <div class="fw-bold fs-5">{{ total_legacy }}</div>
+                    <div class="text-muted small">Legacy users</div>
+                </div>
+                <div class="col">
+                    <div class="fw-bold fs-5 text-success">{{ total_migrated }}</div>
+                    <div class="text-muted small">Migrated ✓</div>
+                </div>
+                <div class="col">
+                    <div class="fw-bold fs-5 text-warning">{{ total_email_sent }}</div>
+                    <div class="text-muted small">Email sent</div>
+                </div>
+                <div class="col">
+                    <div class="fw-bold fs-5 text-danger">{{ total_pending }}</div>
+                    <div class="text-muted small">Pending</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invite User (TCS can invite to any org) -->
+<div class="card p-4 mb-4">
+    <h6 class="fw-bold mb-1"><i class="bi bi-envelope-plus me-2 text-primary"></i>Invite User to Any Organisation</h6>
+    <p class="text-muted small mb-3">TCS can invite users to any organisation. No role at this stage — org admin assigns role after signup.</p>
+    <form id="tcsInviteForm">
+        <div class="row g-3">
+            <div class="col-md-5">
+                <input type="email" class="form-control form-control-sm" id="tcsEmail" placeholder="user@example.com" required>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select form-select-sm" id="tcsOrgId">
+                    {% for s in org_stats %}
+                    <option value="{{ s.org.id }}">{{ s.org.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="bi bi-send me-1"></i>Send Invitation
+                </button>
+            </div>
+        </div>
+    </form>
+    <div id="tcsInviteResult" class="mt-3" style="display:none;"></div>
+</div>
+
+<!-- Per-org table -->
+<div class="card">
+    <div class="card-header bg-white p-3">
+        <h6 class="fw-bold mb-0"><i class="bi bi-buildings me-2 text-primary"></i>Organisations</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Organisation</th>
+                    <th>Auth0 Org ID</th>
+                    <th>Total Users</th>
+                    <th>Legacy</th>
+                    <th>Migrated</th>
+                    <th>Email Sent</th>
+                    <th>Pending</th>
+                    <th>Progress</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in org_stats %}
+                <tr id="org-row-{{ s.org.id }}">
+                    <td class="ps-3 fw-semibold">{{ s.org.name }}</td>
+                    <td class="text-muted small">
+                        {% if s.org.auth0_org_id %}
+                            <code>{{ s.org.auth0_org_id }}</code>
+                        {% else %}
+                            <span class="text-danger small">not linked</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ s.total }}</td>
+                    <td class="text-center">{{ s.legacy_total }}</td>
+                    <td class="text-center">
+                        <span class="fw-semibold text-success">{{ s.migrated }}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="text-warning">{{ s.email_sent }}</span>
+                    </td>
+                    <td class="text-center">
+                        {% if s.pending > 0 %}
+                            <span class="badge bg-danger">{{ s.pending }}</span>
+                        {% else %}
+                            <span class="text-muted">0</span>
+                        {% endif %}
+                    </td>
+                    <td style="min-width: 140px;">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: {{ s.pct }}%"></div>
+                            </div>
+                            <small class="text-muted" style="min-width:32px;">{{ s.pct }}%</small>
+                        </div>
+                    </td>
+                    <td>
+                        {% if s.pending > 0 %}
+                        <button
+                            class="btn btn-outline-primary btn-sm"
+                            onclick="migrateOrg('{{ s.org.id }}', this)"
+                        >
+                            <i class="bi bi-send me-1"></i>Send emails
+                        </button>
+                        {% else %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                            <i class="bi bi-check-circle me-1"></i>Done
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Result area -->
+<div id="migrateResult" class="mt-4" style="display:none;"></div>
+
+<!-- What happens section -->
+<div class="card mt-4 p-4">
+    <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>What happens when you migrate?</h6>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="d-flex gap-3">
+                <div class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">1</div>
+                <div>
+                    <div class="fw-semibold small">Auth0 account created</div>
+                    <div class="text-muted" style="font-size:0.8rem;">User is created in Auth0 with no password yet</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="d-flex gap-3">
+                <div class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">2</div>
+                <div>
+                    <div class="fw-semibold small">Activation email sent</div>
+                    <div class="text-muted" style="font-size:0.8rem;">Auth0 emails the user a secure password-reset link</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="d-flex gap-3">
+                <div class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">3</div>
+                <div>
+                    <div class="fw-semibold small">User sets new password</div>
+                    <div class="text-muted" style="font-size:0.8rem;">User clicks the link, sets their Auth0 password</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="d-flex gap-3">
+                <div class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">✓</div>
+                <div>
+                    <div class="fw-semibold small">Role & data preserved</div>
+                    <div class="text-muted" style="font-size:0.8rem;">Platform DB links Auth0 sub — role, org, entitlements unchanged</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="alert alert-info mt-3 mb-0 py-2 small">
+        <i class="bi bi-shield-check me-2"></i>
+        <strong>Zero disruption:</strong> Legacy login continues to work until users click their activation email.
+        After 30 days, legacy passwords are disabled and Auth0 becomes the only login method.
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// TCS invite form
+document.getElementById('tcsInviteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('tcsEmail').value;
+    const orgId = document.getElementById('tcsOrgId').value;
+    const result = document.getElementById('tcsInviteResult');
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending…';
+    try {
+        const resp = await fetch('/api/admin/invite', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email, org_id: orgId }),
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            result.innerHTML = `<div class="alert alert-success mb-0 py-2">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong>Invitation sent to ${email}</strong>
+                ${data.invitation_id ? `— Auth0 ID: <code>${data.invitation_id}</code>` : '(platform record created)'}
+            </div>`;
+            document.getElementById('tcsEmail').value = '';
+        } else {
+            result.innerHTML = `<div class="alert alert-danger mb-0 py-2">${data.detail || JSON.stringify(data)}</div>`;
+        }
+        result.style.display = 'block';
+    } catch(err) {
+        result.innerHTML = `<div class="alert alert-danger mb-0 py-2">Network error: ${err.message}</div>`;
+        result.style.display = 'block';
+    } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-send me-1"></i>Send Invitation';
+    }
+});
+
+async function migrateAll(btn) {
+    if (!confirm('Send activation emails to ALL pending users across ALL organisations?\n\nThis will create Auth0 accounts and email each user a link to set their new password.')) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending emails…';
+
+    try {
+        const resp = await fetch('/api/tcs/migrate/all', { method: 'POST' });
+        const data = await resp.json();
+        const resultDiv = document.getElementById('migrateResult');
+        if (resp.ok) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h6 class="fw-bold"><i class="bi bi-check-circle-fill me-2"></i>${data.message}</h6>
+                    <div class="mt-2">
+                        ${data.results.map(r => `
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="bi bi-${r.status === 'email_sent' ? 'check-circle text-success' : 'x-circle text-danger'}"></i>
+                                <span class="small"><strong>${r.email}</strong> — ${r.status === 'email_sent' ? 'activation email sent' : 'error: ' + r.error}</span>
+                            </div>`).join('')}
+                    </div>
+                    <div class="mt-3">
+                        <a href="/tcs/dashboard" class="btn btn-outline-success btn-sm">Refresh status</a>
+                    </div>
+                </div>`;
+            resultDiv.style.display = 'block';
+            btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>All emails sent';
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Migrate All Organisations';
+            resultDiv.innerHTML = `<div class="alert alert-danger">${data.detail || JSON.stringify(data)}</div>`;
+            resultDiv.style.display = 'block';
+        }
+    } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Migrate All Organisations';
+        alert('Network error: ' + err.message);
+    }
+}
+
+async function migrateOrg(orgId, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending…';
+
+    try {
+        const resp = await fetch(`/api/tcs/migrate/org/${orgId}`, { method: 'POST' });
+        const data = await resp.json();
+        if (resp.ok) {
+            btn.outerHTML = `<span class="badge bg-success px-3 py-2"><i class="bi bi-check-circle me-1"></i>${data.processed} email(s) sent</span>`;
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send me-1"></i>Send emails';
+            alert(data.detail || JSON.stringify(data));
+        }
+    } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-send me-1"></i>Send emails';
+        alert('Network error: ' + err.message);
+    }
+}
+</script>
+{% endblock %}

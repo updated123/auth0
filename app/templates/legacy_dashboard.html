@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — TCS Identity Platform{% endblock %}
+
+{% block content %}
+
+<!-- Migration Banner -->
+{% if not user.is_migrated %}
+<div class="alert alert-warning border-warning d-flex align-items-start gap-3 mb-4" role="alert">
+    <i class="bi bi-arrow-up-circle-fill fs-4 mt-1 text-warning"></i>
+    <div class="flex-grow-1">
+        <h6 class="fw-bold mb-1">Action required — Upgrade your login</h6>
+        <p class="mb-2 small">
+            We're moving to a more secure login system (Auth0).
+            {% if user.migration_status == 'email_sent' %}
+                <strong>We've sent you an activation email.</strong>
+                Check your inbox for <em>{{ user.email }}</em> and click the link to set your new password.
+            {% else %}
+                Click below to receive an activation email and set up your new password. Your existing data and role are preserved.
+            {% endif %}
+        </p>
+        {% if user.migration_status != 'email_sent' %}
+        <button class="btn btn-warning btn-sm fw-semibold" onclick="triggerMigration()">
+            <i class="bi bi-envelope-arrow-up me-1"></i>Send activation email
+        </button>
+        {% else %}
+        <span class="badge bg-warning text-dark px-3 py-2">
+            <i class="bi bi-envelope-check me-1"></i>Activation email sent — check your inbox
+        </span>
+        <a href="/legacy-login" class="btn btn-outline-secondary btn-sm ms-2">Resend</a>
+        {% endif %}
+    </div>
+    <div id="migrationResult"></div>
+</div>
+{% else %}
+<div class="alert alert-success d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-check-circle-fill"></i>
+    <div>
+        <strong>Migration complete!</strong> Your account is now secured with Auth0.
+        <a href="/login" class="ms-2">Sign in with Auth0 →</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- User Info Card -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
+                     style="width:48px;height:48px;">
+                    <i class="bi bi-person-fill text-primary fs-5"></i>
+                </div>
+                <div>
+                    <div class="fw-bold">{{ user.email }}</div>
+                    <span class="badge bg-primary">{{ user.role or '—' }}</span>
+                </div>
+            </div>
+            <table class="table table-sm table-borderless mb-0 small">
+                <tr><td class="text-muted">Organisation</td><td class="fw-semibold">{{ user.org_id }}</td></tr>
+                <tr><td class="text-muted">Status</td><td><span class="badge bg-success">{{ user.status }}</span></td></tr>
+                <tr><td class="text-muted">Auth type</td>
+                    <td>
+                        {% if user.is_migrated %}
+                            <span class="badge bg-success"><i class="bi bi-shield-lock me-1"></i>Auth0</span>
+                        {% else %}
+                            <span class="badge bg-secondary"><i class="bi bi-database me-1"></i>Legacy DB</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr><td class="text-muted">Entitlements</td>
+                    <td class="small">{{ user.entitlements | join(", ") if user.entitlements else "—" }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card p-4 h-100">
+            <h6 class="fw-bold mb-3"><i class="bi bi-arrow-left-right me-2 text-primary"></i>Migration Status</h6>
+            <div class="d-flex flex-column gap-2">
+
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-success d-flex align-items-center justify-content-center"
+                         style="width:32px;height:32px;flex-shrink:0;">
+                        <i class="bi bi-check-lg text-white small"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold small">User exists in platform DB</div>
+                        <div class="text-muted" style="font-size:0.8rem;">Email, role, and entitlements preserved from Kinsta</div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    {% if user.migration_status in ['email_sent', 'completed'] %}
+                    <div class="rounded-circle bg-success d-flex align-items-center justify-content-center"
+                         style="width:32px;height:32px;flex-shrink:0;">
+                        <i class="bi bi-check-lg text-white small"></i>
+                    </div>
+                    {% else %}
+                    <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center"
+                         style="width:32px;height:32px;flex-shrink:0;">
+                        <i class="bi bi-hourglass text-white small"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <div class="fw-semibold small">Auth0 account created + activation email sent</div>
+                        <div class="text-muted" style="font-size:0.8rem;">Triggers when admin runs migration</div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    {% if user.is_migrated %}
+                    <div class="rounded-circle bg-success d-flex align-items-center justify-content-center"
+                         style="width:32px;height:32px;flex-shrink:0;">
+                        <i class="bi bi-check-lg text-white small"></i>
+                    </div>
+                    {% else %}
+                    <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center"
+                         style="width:32px;height:32px;flex-shrink:0;">
+                        <i class="bi bi-lock text-muted small"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <div class="fw-semibold small">User sets new Auth0 password</div>
+                        <div class="text-muted" style="font-size:0.8rem;">
+                            {% if user.is_migrated %}
+                                idp_sub linked: <code style="font-size:0.75rem;">{{ user.idp_sub[:30] }}…</code>
+                            {% else %}
+                                Waiting for user to click activation email
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    {% if user.is_migrated %}
+                    <div class="rounded-circle bg-success d-flex align-items-center justify-content-center"
+                         style="width:32px;height:32px;flex-shrink:0;">
+                        <i class="bi bi-check-lg text-white small"></i>
+                    </div>
+                    {% else %}
+                    <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center"
+                         style="width:32px;height:32px;flex-shrink:0;">
+                        <i class="bi bi-lock text-muted small"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <div class="fw-semibold small">Legacy password disabled — Auth0 only</div>
+                        <div class="text-muted" style="font-size:0.8rem;">After 30-day grace period</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-end">
+    <a href="/legacy-logout" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-box-arrow-right me-1"></i>Logout
+    </a>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function triggerMigration() {
+    const btn = document.querySelector('[onclick="triggerMigration()"]');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending…';
+
+    try {
+        const resp = await fetch('/api/migrate/send-activation', { method: 'POST' });
+        const data = await resp.json();
+        if (resp.ok) {
+            document.getElementById('migrationResult').innerHTML = `
+                <div class="alert alert-success py-2 mb-0 ms-3">
+                    <i class="bi bi-check-circle me-1"></i>${data.message}
+                </div>`;
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-envelope-arrow-up me-1"></i>Send activation email';
+            alert(data.detail || 'Error sending email.');
+        }
+    } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-envelope-arrow-up me-1"></i>Send activation email';
+        alert('Network error: ' + err.message);
+    }
+}
+</script>
+{% endblock %}

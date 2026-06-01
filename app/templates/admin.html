@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — TCS Identity Platform{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Admin Panel</h4>
+        <p class="text-muted small mb-0">Manage users for <strong>{{ org_id }}</strong></p>
+    </div>
+</div>
+
+<!-- Step 1: Invite Form -->
+<div class="card p-4 mb-4">
+    <h6 class="fw-bold mb-1">
+        <span class="badge bg-primary rounded-circle me-2">1</span>Invite a User
+    </h6>
+    <p class="text-muted small mb-3">Send an invitation email. Role is assigned after the user signs up.</p>
+    <form id="inviteForm">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Email address</label>
+                <input type="email" class="form-control form-control-sm" id="inviteEmail" placeholder="alice@acmecorp.com" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Organisation ID</label>
+                <input type="text" class="form-control form-control-sm" id="inviteOrgId" value="{{ org_id }}" required>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="bi bi-send me-1"></i>Send Invite
+                </button>
+            </div>
+        </div>
+    </form>
+    <div id="inviteResult" class="mt-3" style="display:none;"></div>
+</div>
+
+<!-- Step 2: Pending Role Assignment -->
+<div class="card mb-4">
+    <div class="card-header bg-warning bg-opacity-10 border-warning d-flex align-items-center justify-content-between p-3">
+        <h6 class="fw-bold mb-0">
+            <span class="badge bg-primary rounded-circle me-2">2</span>
+            Assign Roles
+            <span class="badge bg-warning text-dark ms-2">{{ pending_users | length }} pending</span>
+        </h6>
+        <small class="text-muted">Users who accepted their invite and set a password — assign a role to activate them</small>
+    </div>
+    {% if pending_users %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Email</th>
+                    <th>Signed Up</th>
+                    <th>IdP Subject</th>
+                    <th>Assign Role</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in pending_users %}
+                <tr id="pending-row-{{ u.id }}">
+                    <td class="ps-3 fw-semibold">{{ u.email }}</td>
+                    <td class="text-muted small">{{ u.updated_at[:16].replace('T', ' ') if u.updated_at else '—' }}</td>
+                    <td>
+                        {% if u.idp_sub %}
+                            <code style="font-size: 0.7rem;">{{ u.idp_sub[:24] }}…</code>
+                        {% else %}
+                            <span class="text-muted small">not linked yet</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <select class="form-select form-select-sm" id="role-{{ u.id }}" style="width: 160px;">
+                            {% for r in roles %}
+                            <option value="{{ r }}">{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <button
+                            class="btn btn-success btn-sm"
+                            onclick="assignRole('{{ u.id }}')"
+                        >
+                            <i class="bi bi-check-lg me-1"></i>Activate
+                        </button>
+                        <button
+                            class="btn btn-outline-danger btn-sm ms-1"
+                            onclick="rejectUser('{{ u.id }}')"
+                        >
+                            Reject
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-person-check d-block mb-2" style="font-size: 2rem;"></i>
+        No users awaiting role assignment.
+    </div>
+    {% endif %}
+</div>
+
+<!-- All Users Table -->
+<div class="card">
+    <div class="card-header bg-white d-flex align-items-center justify-content-between p-3">
+        <h6 class="fw-bold mb-0">
+            <i class="bi bi-people me-2 text-primary"></i>All Users
+            <span class="badge bg-secondary ms-2">{{ users | length }}</span>
+        </h6>
+        <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="invited">Invited (pending acceptance)</option>
+            <option value="pending_role_assignment">Pending role assignment</option>
+            <option value="rejected">Rejected</option>
+        </select>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="usersTable">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Entitlements</th>
+                    <th>Invited by</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr data-status="{{ u.status }}">
+                    <td class="ps-3 fw-semibold">{{ u.email }}</td>
+                    <td>
+                        {% if u.role %}
+                            <span class="badge bg-primary">{{ u.role }}</span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set status_colors = {
+                            'active': 'success',
+                            'invited': 'secondary',
+                            'pending_role_assignment': 'warning',
+                            'rejected': 'danger',
+                            'expired': 'dark'
+                        } %}
+                        <span class="badge bg-{{ status_colors.get(u.status, 'secondary') }}">
+                            {{ u.status | replace('_', ' ') | title }}
+                        </span>
+                    </td>
+                    <td class="text-muted small">
+                        {{ u.entitlements | join(", ") if u.entitlements else "—" }}
+                    </td>
+                    <td class="text-muted small">{{ u.invited_by or "—" }}</td>
+                    <td class="text-muted small">{{ u.created_at[:10] if u.created_at else "—" }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox d-block mb-2" style="font-size: 2rem;"></i>
+                        No users yet. Send your first invitation above.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Step 1: Invite form
+document.getElementById('inviteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('inviteEmail').value;
+    const orgId = document.getElementById('inviteOrgId').value;
+    const resultDiv = document.getElementById('inviteResult');
+
+    try {
+        const resp = await fetch('/api/admin/invite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, org_id: orgId }),
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success d-flex align-items-center gap-2 mb-0">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div>
+                        <strong>Invitation sent to ${email}!</strong>
+                        The user will receive an email to set their password.
+                        Once they sign up, they'll appear in the <em>Assign Roles</em> queue above.
+                        ${data.invitation_id ? `<br><small>Auth0 invitation ID: <code>${data.invitation_id}</code></small>` : ''}
+                    </div>
+                </div>`;
+        } else {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger mb-0">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Error:</strong> ${data.detail || JSON.stringify(data)}
+                </div>`;
+        }
+        resultDiv.style.display = 'block';
+    } catch (err) {
+        resultDiv.innerHTML = `<div class="alert alert-danger mb-0">Network error: ${err.message}</div>`;
+        resultDiv.style.display = 'block';
+    }
+});
+
+// Step 2: Assign role
+async function assignRole(userId) {
+    const role = document.getElementById(`role-${userId}`).value;
+    try {
+        const resp = await fetch(`/api/admin/users/${userId}/assign-role`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role }),
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            const row = document.getElementById(`pending-row-${userId}`);
+            row.innerHTML = `
+                <td colspan="5" class="ps-3">
+                    <div class="alert alert-success mb-0 py-2">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <strong>${data.user.email}</strong> is now ACTIVE with role <strong>${role}</strong>.
+                        <a href="." class="ms-2">Refresh</a>
+                    </div>
+                </td>`;
+        } else {
+            alert(`Error: ${data.detail || JSON.stringify(data)}`);
+        }
+    } catch (err) {
+        alert(`Network error: ${err.message}`);
+    }
+}
+
+async function rejectUser(userId) {
+    if (!confirm('Reject this user? They will not be able to access the platform.')) return;
+    // For POC — implement a reject endpoint if needed
+    alert('Reject endpoint not implemented in this POC. Remove the user from Auth0 dashboard.');
+}
+
+// Status filter
+document.getElementById('statusFilter').addEventListener('change', function() {
+    const filter = this.value;
+    document.querySelectorAll('#usersTable tbody tr[data-status]').forEach(row => {
+        row.style.display = (!filter || row.dataset.status === filter) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}
