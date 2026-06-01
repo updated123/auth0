@@ -1,3 +1,4 @@
+from pathlib import Path
 """
 TCS Super-Admin routes.
 
@@ -26,7 +27,7 @@ from app.models import MigrationStatus, Organization, PlatformUser, UserStatus
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["tcs-admin"])
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
 
 
 # ---------------------------------------------------------------------------

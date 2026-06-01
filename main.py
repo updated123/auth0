@@ -169,7 +169,8 @@ app.add_middleware(
 # Templates
 # ---------------------------------------------------------------------------
 
-templates = Jinja2Templates(directory="app/templates")
+from pathlib import Path
+templates = Jinja2Templates(directory=str(Path(__file__).parent / "app" / "templates"))
 
 
 # ---------------------------------------------------------------------------

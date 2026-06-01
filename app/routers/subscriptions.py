@@ -1,3 +1,4 @@
+from pathlib import Path
 """
 Subscription, Permission Profiles, and MFA management routes.
 
@@ -41,7 +42,7 @@ from app.models import Organization, PermissionProfile, PlatformUser
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["subscriptions"])
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
 
 TCS_ADMIN_EMAIL = "utsav.patel@ignitedata.ai"
 

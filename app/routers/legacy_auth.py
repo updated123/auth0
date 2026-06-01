@@ -1,3 +1,4 @@
+from pathlib import Path
 """
 Legacy login — simulates the existing Kinsta DB authentication.
 
@@ -27,7 +28,7 @@ from app.models import MigrationStatus, Organization, PlatformUser, UserStatus
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["legacy-auth"])
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
 
 
 @router.get("/legacy-login", response_class=HTMLResponse, include_in_schema=False)

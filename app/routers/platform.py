@@ -1,3 +1,4 @@
+from pathlib import Path
 """
 Platform-level routes — architecture overview, account recovery, document access demo.
 
@@ -21,7 +22,7 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["platform"])
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
 
 
 # ---------------------------------------------------------------------------

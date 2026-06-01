@@ -1,3 +1,4 @@
+from pathlib import Path
 """
 Admin API endpoints.
 
@@ -32,7 +33,7 @@ from app.services.user_service import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/admin", tags=["admin"])
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
 
 ROLE_ENTITLEMENTS = {
     "admin":  ["*"],
