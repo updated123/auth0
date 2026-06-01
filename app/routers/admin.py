@@ -1,4 +1,3 @@
-from pathlib import Path
 """
 Admin API endpoints.
 
@@ -9,7 +8,7 @@ GET  /api/admin/pending                    — list users awaiting role assignme
 GET  /api/admin/panel                      — admin HTML page
 """
 from __future__ import annotations
-
+from pathlib import Path
 import logging
 from typing import List, Optional
 

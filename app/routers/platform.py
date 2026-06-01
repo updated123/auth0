@@ -1,4 +1,3 @@
-from pathlib import Path
 """
 Platform-level routes — architecture overview, account recovery, document access demo.
 
@@ -9,7 +8,7 @@ POST /api/account/resend-verification   → Auth0 Management API: resend email v
 POST /api/account/unlock                → Auth0 Management API: unblock user
 """
 from __future__ import annotations
-
+from pathlib import Path
 import logging
 
 import httpx

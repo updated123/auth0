@@ -1,4 +1,3 @@
-from pathlib import Path
 """
 Legacy login — simulates the existing Kinsta DB authentication.
 
@@ -7,7 +6,7 @@ GET  /legacy-login  — render login form
 GET  /migrate-now   — trigger Auth0 migration for the logged-in legacy user
 """
 from __future__ import annotations
-
+from pathlib import Path
 import base64
 import hashlib
 import logging

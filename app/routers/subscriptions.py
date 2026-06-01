@@ -1,4 +1,3 @@
-from pathlib import Path
 """
 Subscription, Permission Profiles, and MFA management routes.
 
@@ -22,7 +21,7 @@ MFA:
   GET  /mfa/enroll
 """
 from __future__ import annotations
-
+from pathlib import Path
 import base64
 import hashlib
 import logging

@@ -1,4 +1,3 @@
-from pathlib import Path
 """
 TCS Super-Admin routes.
 
@@ -11,7 +10,7 @@ POST /api/tcs/migrate/all    — migrate all pending users across all orgs
 GET  /api/tcs/status         — JSON migration status per org
 """
 from __future__ import annotations
-
+from pathlib import Path
 import logging
 
 import httpx
